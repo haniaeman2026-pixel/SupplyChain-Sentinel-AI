@@ -129,7 +129,7 @@ SupplyChain-Sentinel-AI/
 **1. Clone the repository**
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/SupplyChain-Sentinel-AI.git
+git clone https://github.com/haniaeman2026-pixel/SupplyChain-Sentinel-AI.git
 cd SupplyChain-Sentinel-AI
 ```
 
