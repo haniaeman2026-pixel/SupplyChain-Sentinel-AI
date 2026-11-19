@@ -1,0 +1,8 @@
+
+supplier_id,supplier_name,product_category,region,reliability_score,lead_time_days,capacity,status
+S001,Alpha Medical Supplies,Healthcare,Karachi,94,3,5000,Active
+S002,TechCore Industries,Electronics,Lahore,88,7,1200,Active
+S003,Global Packaging Co,Packaging,Karachi,91,4,8000,Active
+S004,Prime Components,Electronics,Islamabad,76,10,900,Delayed
+S005,SafeCare Distributors,Healthcare,Lahore,96,2,6000,Active
+S006,Metro Industrial,Manufacturing,Karachi,82,6,2000,Active

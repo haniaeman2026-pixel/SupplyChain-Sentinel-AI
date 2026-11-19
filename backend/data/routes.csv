@@ -1,0 +1,7 @@
+
+route_id,origin,destination,normal_days,current_days,condition
+R001,Karachi,Lahore,2,3,Moderate
+R002,Lahore,Islamabad,2,5,Disrupted
+R003,Karachi,Islamabad,3,4,Moderate
+R004,Islamabad,Lahore,2,4,Disrupted
+R005,Karachi,Karachi,1,1,Normal

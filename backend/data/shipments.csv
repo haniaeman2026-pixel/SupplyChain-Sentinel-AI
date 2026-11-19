@@ -1,0 +1,8 @@
+
+shipment_id,supplier_id,product_id,origin,destination,expected_days,delay_days,status
+SH001,S001,P001,Karachi,Karachi,3,0,On Time
+SH002,S002,P002,Lahore,Karachi,5,4,Delayed
+SH003,S003,P003,Karachi,Islamabad,4,1,At Risk
+SH004,S004,P004,Islamabad,Lahore,6,7,Delayed
+SH005,S005,P005,Lahore,Karachi,2,0,On Time
+SH006,S006,P006,Karachi,Islamabad,5,2,At Risk

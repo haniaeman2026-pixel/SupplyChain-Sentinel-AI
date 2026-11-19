@@ -1,0 +1,8 @@
+
+product_id,product_name,category,stock,minimum_stock,daily_demand,warehouse,region
+P001,Medical Gloves,Healthcare,1200,500,180,WH-KHI,Karachi
+P002,Industrial Sensors,Electronics,180,300,35,WH-LHR,Lahore
+P003,Packaging Material,Packaging,2400,800,220,WH-KHI,Karachi
+P004,Microprocessors,Electronics,90,250,28,WH-ISB,Islamabad
+P005,Protective Masks,Healthcare,700,400,95,WH-LHR,Lahore
+P006,Steel Components,Manufacturing,350,500,60,WH-KHI,Karachi
