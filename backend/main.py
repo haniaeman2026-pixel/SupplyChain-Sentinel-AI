@@ -103,6 +103,8 @@ def execute_workflow(job_id: str, crisis: CrisisRequest):
 
         completed_stage = WORKFLOW_STAGES[current_index]
 
+        raw_output = getattr(task_output, "raw", None) or getattr(task_output, "output", None)
+        output_preview = str(raw_output).strip()[:700] if raw_output is not None else "Task callback received; output preview unavailable."
         emit_event(
             job_id,
             "stage_completed",
@@ -110,7 +112,8 @@ def execute_workflow(job_id: str, crisis: CrisisRequest):
                 "stage_id": completed_stage["id"],
                 "stage_name": completed_stage["name"],
                 "completed": completed_count,
-                "total": len(WORKFLOW_STAGES)
+                "total": len(WORKFLOW_STAGES),
+                "output_preview": output_preview
             }
         )
 
@@ -168,10 +171,15 @@ def execute_workflow(job_id: str, crisis: CrisisRequest):
         job["status"] = "failed"
         job["error"] = str(exc)
 
+        failed_stage = WORKFLOW_STAGES[min(completed_count, len(WORKFLOW_STAGES) - 1)]
         emit_event(
             job_id,
             "workflow_failed",
             {
+                "failed_stage_id": failed_stage["id"],
+                "failed_stage_name": failed_stage["name"],
+                "completed": completed_count,
+                "total": len(WORKFLOW_STAGES),
                 "message": str(exc)
             }
         )
@@ -265,6 +273,24 @@ def start_analysis(crisis: CrisisRequest):
         "status": "running",
         "message": "Supply-chain analysis started."
     }
+
+
+@app.get("/api/workflow/active")
+def active_workflows():
+    """Expose current in-memory jobs and their truthful execution status."""
+    with workflow_lock:
+        return {
+            "jobs": [
+                {
+                    "job_id": job_id,
+                    "status": job.get("status"),
+                    "finished": job.get("finished", False),
+                    "error": job.get("error"),
+                    "result_report_id": (job.get("result") or {}).get("report_id"),
+                }
+                for job_id, job in workflow_jobs.items()
+            ]
+        }
 
 
 @app.get("/api/workflow/{job_id}/events")

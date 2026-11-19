@@ -34,6 +34,18 @@ export const api = {
       body: JSON.stringify(payload)
     }),
 
+  startAnalysis: (payload) =>
+    request("/analyze/start", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+
+  workflowResult: (jobId) => request(`/workflow/${encodeURIComponent(jobId)}/result`),
+
+  activeWorkflows: () => request("/workflow/active"),
+
+  workflowEventsUrl: (jobId) => `${API_BASE}/workflow/${encodeURIComponent(jobId)}/events`,
+
   review: (payload) =>
     request("/review", {
       method: "POST",

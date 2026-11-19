@@ -1,4 +1,3 @@
-
 from crewai import Crew, Process, LLM
 
 from backend.config import GROQ_API_KEY, GROQ_MODEL
@@ -8,9 +7,10 @@ from backend.agents.tasks import create_tasks
 
 def run_supply_chain_crew(crisis, on_task_completed=None):
     """
-    Execute the supply-chain analysis sequentially.
+    Run the supply-chain investigation sequentially.
 
-    on_task_completed is called by CrewAI after each task finishes.
+    Task outputs are deliberately kept concise so the final Recovery
+    Strategy task stays within Groq's request-size / TPM constraints.
     """
 
     if not GROQ_API_KEY:
@@ -21,7 +21,8 @@ def run_supply_chain_crew(crisis, on_task_completed=None):
     llm = LLM(
         model=f"groq/{GROQ_MODEL}",
         api_key=GROQ_API_KEY,
-        temperature=0.2
+        temperature=0.2,
+        max_tokens=900,
     )
 
     agents = create_agents(llm)
@@ -40,7 +41,7 @@ def run_supply_chain_crew(crisis, on_task_completed=None):
         tasks=tasks,
         process=Process.sequential,
         verbose=True,
-        task_callback=task_callback
+        task_callback=task_callback,
     )
 
     result = crew.kickoff()

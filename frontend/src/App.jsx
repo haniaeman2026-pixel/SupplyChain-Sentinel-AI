@@ -8,6 +8,9 @@ import {
   Truck, Users, Workflow, X, XCircle, Zap
 } from "lucide-react";
 import { api } from "./services/api";
+import html2pdf from "html2pdf.js";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 
 const agents = [
   { name: "Demand & Risk Analyst", short: "Risk Analyst", department: "Risk Intelligence", icon: AlertTriangle, color: "violet", task: "Demand pressure and crisis severity" },
@@ -27,6 +30,7 @@ const initialForm = {
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard },
+  { label: "Mission Control", icon: Activity },
   { label: "Crisis Analysis", icon: Workflow },
   { label: "Agent Network", icon: Network },
   { label: "Reports & Review", icon: FileText }
@@ -244,6 +248,255 @@ function RecentReports({ reports, onSelect, onViewAll }) {
   );
 }
 
+function escapeHTML(value = "") {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[char]));
+}
+
+
+async function downloadReportPDF(report) {
+  if (!report) return;
+
+  const analysis = typeof report.analysis === "string"
+    ? report.analysis
+    : JSON.stringify(report.analysis ?? {}, null, 2);
+
+  const markdownHtml = DOMPurify.sanitize(marked.parse(analysis || "No AI findings available."));
+  const generatedAt = report.created_at ? formatDate(report.created_at) : new Date().toLocaleString();
+  const container = document.createElement("div");
+  container.className = "scs-pdf-document";
+  container.innerHTML = `
+    <section class="scs-pdf-cover">
+      <div class="scs-pdf-brand">SUPPLYCHAIN SENTINEL AI</div>
+      <div class="scs-pdf-accent"></div>
+      <h1>Supply Chain<br/>Intelligence Report</h1>
+      <p class="scs-pdf-subtitle">AI-powered crisis investigation &amp; recovery insights</p>
+      <div class="scs-pdf-cover-meta">
+        <div><span>REPORT ID</span><strong>#${escapeHTML(report.report_id ?? "N/A")}</strong></div>
+        <div><span>GENERATED</span><strong>${escapeHTML(generatedAt)}</strong></div>
+        <div><span>STATUS</span><strong>${escapeHTML(report.status ?? "Generated")}</strong></div>
+      </div>
+      <div class="scs-pdf-cover-footer">SUPPLY CHAIN RISK &amp; RESILIENCE INTELLIGENCE</div>
+    </section>
+    <section class="scs-pdf-content">
+      <h1 class="scs-pdf-section-title">Executive Overview</h1>
+      <div class="scs-pdf-meta-grid">
+        <div class="scs-pdf-meta-card"><span>Crisis Type</span><strong>${escapeHTML(report.crisis_type || "Not specified")}</strong></div>
+        <div class="scs-pdf-meta-card"><span>Urgency</span><strong>${escapeHTML(report.urgency || "Not specified")}</strong></div>
+        <div class="scs-pdf-meta-card"><span>Affected Product</span><strong>${escapeHTML(report.affected_product || "Not specified")}</strong></div>
+        <div class="scs-pdf-meta-card"><span>Affected Region</span><strong>${escapeHTML(report.affected_region || "Not specified")}</strong></div>
+      </div>
+      <h2>Incident Description</h2>
+      <div class="scs-pdf-description">${escapeHTML(report.description || "No description available.")}</div>
+      <h1 class="scs-pdf-section-title">AI Investigation &amp; Findings</h1>
+      <div class="scs-pdf-markdown">${markdownHtml}</div>
+      <div class="scs-pdf-disclaimer"><strong>Review Notice</strong><p>This document contains AI-generated analysis and recommendations. Validate findings against current operational data before implementing critical decisions.</p></div>
+      <div class="scs-pdf-footer">SupplyChain Sentinel AI · Intelligence Report · #${escapeHTML(report.report_id ?? "N/A")}</div>
+    </section>`;
+
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .scs-pdf-document { width: 760px; box-sizing: border-box; background: #fff; color: #19263b; font: 12px/1.75 Arial, Helvetica, sans-serif; }
+    .scs-pdf-cover { min-height: 1040px; box-sizing: border-box; padding: 82px 65px; position: relative; background: #101b35; color: #fff; page-break-after: always; }
+    .scs-pdf-brand { color: #77dfc1; font-size: 13px; font-weight: 800; letter-spacing: 3px; }
+    .scs-pdf-accent { width: 75px; height: 4px; background: #77dfc1; margin: 35px 0; }
+    .scs-pdf-cover h1 { color: #fff; font-size: 47px; line-height: 1.15; margin: 145px 0 18px; }
+    .scs-pdf-subtitle { color: #b9c6df; font-size: 15px; }
+    .scs-pdf-cover-meta { display: flex; flex-direction: column; gap: 16px; margin-top: 95px; border-top: 1px solid #344663; border-bottom: 1px solid #344663; padding: 24px 0; }
+    .scs-pdf-cover-meta span { display: block; color: #96a9c9; font-size: 10px; letter-spacing: 1px; }
+    .scs-pdf-cover-meta strong { display: block; color: #fff; font-size: 13px; overflow-wrap: anywhere; }
+    .scs-pdf-cover-footer { position: absolute; bottom: 65px; left: 65px; color: #92a5c7; font-size: 10px; letter-spacing: 2px; }
+    .scs-pdf-content { padding: 30px 10px; }
+    .scs-pdf-section-title { font-size: 23px; color: #142847; border-bottom: 2px solid #68cdb0; padding-bottom: 9px; margin: 26px 0 18px; }
+    .scs-pdf-content h2 { font-size: 17px; color: #1a416e; margin: 24px 0 10px; }
+    .scs-pdf-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0; }
+    .scs-pdf-meta-card { background: #f3f7fb; border: 1px solid #dce6ef; border-radius: 8px; padding: 14px; page-break-inside: avoid; }
+    .scs-pdf-meta-card span { display: block; color: #657790; font-size: 10px; text-transform: uppercase; letter-spacing: .8px; }
+    .scs-pdf-meta-card strong { display: block; margin-top: 5px; color: #172b49; font-size: 13px; overflow-wrap: anywhere; }
+    .scs-pdf-description { background: #f8fafc; border-left: 4px solid #68cdb0; border-radius: 4px; padding: 14px; overflow-wrap: anywhere; }
+    .scs-pdf-markdown { color: #29374c; line-height: 1.85; overflow-wrap: anywhere; }
+    .scs-pdf-markdown h1 { color: #142847; font-size: 21px; margin: 27px 0 12px; border-bottom: 1px solid #dce5ee; padding-bottom: 8px; }
+    .scs-pdf-markdown h2 { color: #1c4772; font-size: 18px; margin: 22px 0 10px; }
+    .scs-pdf-markdown h3, .scs-pdf-markdown h4 { color: #28658a; font-size: 15px; margin: 18px 0 8px; }
+    .scs-pdf-markdown p { margin: 10px 0; }
+    .scs-pdf-markdown ul, .scs-pdf-markdown ol { padding-left: 24px; margin: 12px 0; }
+    .scs-pdf-markdown li { margin-bottom: 6px; }
+    .scs-pdf-markdown blockquote { background: #f1f7f9; border-left: 4px solid #65cbb0; margin: 16px 0; padding: 10px 16px; }
+    .scs-pdf-markdown table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 10px; page-break-inside: auto; }
+    .scs-pdf-markdown thead { display: table-header-group; }
+    .scs-pdf-markdown th { background: #142744; color: #fff; padding: 9px; text-align: left; }
+    .scs-pdf-markdown td { border: 1px solid #dce5ee; padding: 8px; vertical-align: top; }
+    .scs-pdf-markdown tr { page-break-inside: avoid; }
+    .scs-pdf-markdown tr:nth-child(even) td { background: #f5f8fb; }
+    .scs-pdf-markdown code { background: #f1f4f8; padding: 2px 5px; border-radius: 4px; }
+    .scs-pdf-disclaimer { margin-top: 28px; padding: 14px; background: #edf7f5; border: 1px solid #d2eae3; border-radius: 8px; page-break-inside: avoid; }
+    .scs-pdf-disclaimer strong { color: #17684e; }
+    .scs-pdf-footer { margin-top: 28px; padding-top: 10px; border-top: 1px solid #dce5ee; color: #718096; text-align: center; font-size: 9px; }
+  `;
+  document.body.appendChild(style);
+  document.body.appendChild(container);
+
+  const options = {
+    margin: [12, 12, 16, 12],
+    filename: `SupplyChain_Report_${report.report_id || "report"}.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["css", "legacy"], avoid: ["tr", ".scs-pdf-meta-card", ".scs-pdf-disclaimer"] }
+  };
+
+  try {
+    await html2pdf().set(options).from(container).save();
+  } finally {
+    container.remove();
+    style.remove();
+  }
+}
+
+
+function MissionControl({ activeJob, reports, onOpenReport }) {
+  const stageNames = [
+    { id: "demand", name: "Demand & Risk Analyst", short: "Demand & Risk", detail: "Risk assessment and crisis severity", department: "Risk Intelligence" },
+    { id: "supplier", name: "Supplier Intelligence Agent", short: "Supplier Intelligence", detail: "Supplier reliability and sourcing", department: "Procurement" },
+    { id: "inventory", name: "Inventory Planning Agent", short: "Inventory Planning", detail: "Stock coverage and replenishment", department: "Inventory" },
+    { id: "logistics", name: "Logistics Optimization Agent", short: "Logistics Optimization", detail: "Shipment delays and route options", department: "Logistics" },
+    { id: "recovery", name: "Recovery Strategy Coordinator", short: "Recovery Strategy", detail: "Prioritized recovery recommendations", department: "Recovery" }
+  ];
+  const stages = activeJob?.stages || {};
+  const events = activeJob?.events || [];
+  const total = stageNames.length;
+  const completed = stageNames.filter(stage => stages[stage.id]?.status === "completed").length;
+  const failedStage = stageNames.find(stage => stages[stage.id]?.status === "failed");
+  const activeStage = stageNames.find(stage => stages[stage.id]?.status === "running");
+  const failed = activeJob?.status === "failed";
+  const running = activeJob?.status === "running" || activeJob?.status === "starting";
+  const finished = activeJob?.status === "completed";
+  const percent = finished ? 100 : Math.round((completed / total) * 100);
+  const statusLabel = running ? "Running" : failed ? "Failed" : finished ? "Completed" : "Standby";
+  const latestEvent = events.length ? events[events.length - 1] : null;
+  const currentStageName = activeStage?.name || (failedStage ? failedStage.name : finished ? "Workflow completed" : "Waiting for a new workflow");
+  const eventLabel = event => {
+    if (event.type === "stage_started") return `${event.stage_name || event.stage_id} started`;
+    if (event.type === "stage_completed") return `${event.stage_name || event.stage_id} completed`;
+    if (event.type === "workflow_completed") return "Investigation report saved";
+    if (event.type === "workflow_failed") return "Workflow failed";
+    return event.type || "Workflow event";
+  };
+  const timeLabel = value => {
+    if (!value) return "Time unavailable";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "Time unavailable" : date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+  };
+  const agentIcons = [Gauge, Network, Boxes, Truck, ShieldCheck];
+
+  return (
+    <div className="page-stack mission-control-page mission-control-v2">
+      <section className="mc2-hero">
+        <div className="mc2-hero-grid" />
+        <div className="mc2-hero-copy">
+          <span className="mc2-eyebrow"><i className={running ? "is-live" : ""} /> SUPPLY CHAIN INTELLIGENCE PLATFORM</span>
+          <h1>Mission Control <span className={`mc2-live-tag ${running ? "is-live" : ""}`}>{running ? "LIVE" : statusLabel.toUpperCase()}</span></h1>
+          <p>Real-time multi-agent workflow execution</p>
+          <div className="mc2-hero-caption">Analyzing <b>•</b> Investigating <b>•</b> Generating insights</div>
+        </div>
+        <div className="mc2-globe-art" aria-hidden="true">
+          <div className="mc2-globe"><span>AI</span></div>
+          <i className="mc2-orbit mc2-orbit-a" /><i className="mc2-orbit mc2-orbit-b" />
+        </div>
+        <div className={`mc2-job-chip ${failed ? "is-failed" : ""}`}>
+          <small>WORKFLOW ID</small><strong>{activeJob?.jobId || "No active workflow"}</strong>
+          <span className={`mc2-status-chip ${running ? "running" : failed ? "failed" : finished ? "completed" : "idle"}`}>{statusLabel}</span>
+        </div>
+      </section>
+
+      <section className="mc2-pipeline-panel">
+        <div className="mc2-panel-head">
+          <div><span className="mc2-panel-icon"><Network size={18} /></span><div><h2>AI Agent Pipeline</h2><p>Five specialized agents working in sequence</p></div></div>
+          <span className={`mc2-flow-live ${running ? "is-live" : ""}`}><i /> {running ? "Live execution flow" : "Workflow monitor"}</span>
+        </div>
+        <div className="mc2-pipeline">
+          <div className="mc2-pipeline-track"><span className={running ? "mc2-track-beam is-moving" : "mc2-track-beam"} /></div>
+          {stageNames.map((stage, index) => {
+            const state = stages[stage.id]?.status || "waiting";
+            const Icon = agentIcons[index];
+            const label = state === "completed" ? "Completed" : state === "running" ? "Running..." : state === "failed" ? "Failed" : index === 0 && !activeJob ? "Ready" : "Waiting...";
+            return (
+              <div className={`mc2-agent mc2-${state}`} key={stage.id}>
+                <div className="mc2-agent-orb">
+                  <span className="mc2-agent-number">{index + 1}</span>
+                  <div className="mc2-agent-symbol"><Icon size={29} strokeWidth={1.9} /></div>
+                  {state === "running" && <i className="mc2-agent-ripple" />}
+                </div>
+                <h3>{stage.name}</h3>
+                <p>{stage.department}</p>
+                <span className={`mc2-agent-state ${state}`}><i />{label}</span>
+                {state === "completed" && stages[stage.id]?.timestamp && <small className="mc2-agent-time">{timeLabel(stages[stage.id].timestamp)}</small>}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mc2-pipeline-footer">
+          <div className="mc2-progress-copy"><strong>{percent}%</strong><span>Workflow progress</span></div>
+          <div className="mc2-progress-bar"><span style={{ width: `${percent}%` }} /></div>
+          <div className="mc2-legend"><span><i className="done" />Completed</span><span><i className="live" />Running</span><span><i className="wait" />Waiting</span><span><i className="bad" />Failed</span></div>
+        </div>
+      </section>
+
+      <div className="mc2-lower-grid">
+        <section className="mc2-card mc2-execution">
+          <div className="mc2-card-heading"><div><span className="mc2-card-icon purple"><Activity size={19} /></span><div><h2>Live Execution Monitor</h2><p>Backend-confirmed workflow events</p></div></div><span className="mc2-view-label">{events.length} events</span></div>
+          <div className="mc2-event-list">
+            {events.length ? events.slice().reverse().map((event, index) => {
+              const isBad = event.type === "workflow_failed";
+              const isDone = event.type === "stage_completed" || event.type === "workflow_completed";
+              return <div className={`mc2-event ${isBad ? "failed" : isDone ? "completed" : "running"}`} key={`${event.timestamp || index}-${index}`}>
+                <span className="mc2-event-marker">{isBad ? <XCircle size={15} /> : isDone ? <Check size={15} /> : <Zap size={15} />}</span>
+                <div><strong>{eventLabel(event)}</strong><small>{timeLabel(event.timestamp)}{event.output_preview ? ` · ${event.output_preview}` : event.message ? ` · ${event.message}` : ""}</small></div>
+                <span className="mc2-event-status">{isBad ? "Failed" : isDone ? "Success" : "Active"}</span>
+              </div>;
+            }) : <div className="mc2-empty"><Activity size={25} /><strong>No live events yet</strong><span>Start a crisis analysis to see confirmed agent activity here.</span></div>}
+          </div>
+        </section>
+
+        <section className="mc2-card mc2-activity">
+          <div className="mc2-card-heading"><div><span className="mc2-card-icon cyan"><Users size={19} /></span><div><h2>Agent Activity Feed</h2><p>Current team status</p></div></div><span className={`mc2-feed-indicator ${running ? "is-live" : ""}`}><i />{running ? "Live" : "Standby"}</span></div>
+          <div className="mc2-feed-list">
+            {stageNames.map((stage, index) => {
+              const state = stages[stage.id]?.status || "waiting";
+              const Icon = agentIcons[index];
+              const detail = stages[stage.id]?.detail || (state === "waiting" ? "Waiting for its workflow turn" : stage.detail);
+              return <div className={`mc2-feed-row ${state}`} key={stage.id}>
+                <span className={`mc2-feed-icon tone-${index}`}><Icon size={19} /></span>
+                <div><strong>{stage.short}</strong><small>{detail}</small></div>
+                <span className={`mc2-feed-state ${state}`}>{state === "completed" ? "Completed" : state === "running" ? "Running" : state === "failed" ? "Failed" : "Waiting"}</span>
+              </div>;
+            })}
+          </div>
+        </section>
+
+        <section className="mc2-card mc2-summary">
+          <div className="mc2-card-heading"><div><span className="mc2-card-icon violet"><Gauge size={19} /></span><div><h2>Execution Summary</h2><p>Agent performance overview</p></div></div></div>
+          <div className="mc2-donut" style={{ "--mc2-progress": `${percent}%` }}><div><strong>{percent}%</strong><span>{running ? "In progress" : failed ? "Interrupted" : finished ? "Completed" : "Ready"}</span></div></div>
+          <div className="mc2-summary-rows">
+            <span><i className="done" />Completed <b>{completed}</b></span>
+            <span><i className="live" />Running <b>{stageNames.filter(s => stages[s.id]?.status === "running").length}</b></span>
+            <span><i className="wait" />Waiting <b>{stageNames.filter(s => !stages[s.id] || stages[s.id].status === "waiting").length}</b></span>
+            <span><i className="bad" />Failed <b>{stageNames.filter(s => stages[s.id]?.status === "failed").length}</b></span>
+          </div>
+        </section>
+      </div>
+
+      <section className="mc2-current-job">
+        <div className="mc2-job-leading"><span className="mc2-card-icon purple"><Workflow size={19} /></span><div><small>CURRENT WORKFLOW</small><strong>{currentStageName}</strong></div></div>
+        <div className="mc2-job-meta"><span><small>Job ID</small><b>{activeJob?.jobId || "Not started"}</b></span><span><small>Reports stored</small><b>{reports.length}</b></span><span><small>Last backend event</small><b>{latestEvent ? timeLabel(latestEvent.timestamp) : "No events"}</b></span></div>
+        {failed && <div className="mc2-error"><AlertTriangle size={15} /><span>{activeJob.error || "Workflow failed without a returned error message."}</span></div>}
+        {activeJob?.resultReport && <button className="secondary-button mc2-report-button" onClick={() => onOpenReport(activeJob.resultReport)}><FileText size={14} /> Open investigation report <ChevronRight size={14} /></button>}
+      </section>
+    </div>
+  );
+}
 function ReportView({ report, onBack, onReview, reviewing }) {
   const [decision, setDecision] = useState("Approved");
   const [comments, setComments] = useState("");
@@ -258,7 +511,7 @@ function ReportView({ report, onBack, onReview, reviewing }) {
     <div className="page-stack">
       <div className="page-title-row">
         <div><button className="back-link" onClick={onBack}>← Back to reports</button><h1>Investigation report</h1><p>Executive intelligence and human review record</p></div>
-        <span className={cx("pill", statusClass(report.status))}>{report.status}</span>
+        <div className="report-header-actions"><span className={cx("pill", statusClass(report.status))}>{report.status}</span><button className="primary-button pdf-download-button" onClick={() => downloadReportPDF(report)}><FileText size={15} /> Download PDF</button></div>
       </div>
       <section className="panel report-summary">
         <div className="report-summary-top"><div><span className="eyebrow">REPORT IDENTIFIER</span><h2>#{report.report_id}</h2></div><span className={cx("pill", statusClass(report.urgency))}>{report.urgency} urgency</span></div>
@@ -296,6 +549,7 @@ export default function App() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
+  const [activeJob, setActiveJob] = useState(null);
   const [reviewing, setReviewing] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
@@ -333,15 +587,57 @@ export default function App() {
     setError("");
     setSuccess("");
     setLoading(true);
+    setActiveJob({ jobId: null, status: "starting", stages: {}, events: [], error: null });
     try {
-      const result = await api.analyze(form);
-      setSelectedReport(result);
-      setSuccess("Investigation completed and report saved.");
-      setActivePage("Investigation Report");
+      const started = await api.startAnalysis(form);
+      const jobId = started.job_id;
+      setActiveJob(current => ({ ...current, jobId, status: "running" }));
+      setActivePage("Mission Control");
+
+      await new Promise((resolve, reject) => {
+        const stream = new EventSource(api.workflowEventsUrl(jobId));
+        const eventTypes = ["stage_started", "stage_completed", "workflow_completed", "workflow_failed"];
+        eventTypes.forEach(type => stream.addEventListener(type, (event) => {
+          let payload;
+          try { payload = JSON.parse(event.data); } catch { payload = { type, message: event.data }; }
+          setActiveJob(current => {
+            const next = { ...current, events: [...(current?.events || []), payload] };
+            if (payload.stage_id) {
+              next.stages = { ...(current?.stages || {}), [payload.stage_id]: {
+                status: type === "stage_started" ? "running" : type === "stage_completed" ? "completed" : "failed",
+                detail: type === "stage_completed" ? (payload.output_preview || "Task completed; output recorded by backend.") : payload.department || "Task started by backend."
+              }};
+            }
+            if (type === "workflow_completed") next.status = "completed";
+            if (type === "workflow_failed") {
+              next.status = "failed";
+              next.error = payload.message || "Workflow failed";
+              if (payload.failed_stage_id) {
+                next.stages = { ...(next.stages || {}), [payload.failed_stage_id]: { status: "failed", detail: payload.message || "Backend task failed." } };
+              }
+            }
+            return next;
+          });
+          if (type === "workflow_failed") { stream.close(); reject(new Error(payload.message || "Backend workflow failed.")); }
+          if (type === "workflow_completed") { stream.close(); resolve(); }
+        }));
+        stream.addEventListener("stream_end", () => { stream.close(); resolve(); });
+        stream.onerror = () => {
+          // EventSource reconnects automatically; a terminal state is fetched below if the stream closes.
+        };
+      });
+
+      const finalData = await api.workflowResult(jobId);
+      if (finalData.status === "failed") throw new Error(finalData.error || "Backend workflow failed.");
+      if (!finalData.result) throw new Error("Workflow stream ended before the backend returned a report.");
+      setSelectedReport(finalData.result);
+      setSuccess("Investigation completed by backend agents and report saved.");
+      setActiveJob(current => ({ ...current, status: "completed", resultReport: finalData.result }));
       setForm(initialForm);
       await loadData();
     } catch (err) {
       setError(err.message || "Analysis could not be completed.");
+      setActiveJob(current => ({ ...current, status: "failed", error: err.message || "Analysis failed" }));
     } finally {
       setLoading(false);
     }
@@ -473,6 +769,7 @@ export default function App() {
 
   const renderContent = () => {
     if (activePage === "Overview") return renderOverview();
+    if (activePage === "Mission Control") return <MissionControl activeJob={activeJob} reports={reports} onOpenReport={openReport} />;
     if (activePage === "Crisis Analysis") return renderCrisisForm();
     if (activePage === "Agent Network") return renderAgents();
     if (activePage === "Reports & Review") return renderReports();
