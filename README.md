@@ -20,9 +20,9 @@
 
 ### 🌐 Live Demo
 
-**[🚀 Visit SupplyChain Sentinel AI](https://supplychain-sentinel-ai.vercel.app/)**
+**[🚀 Visit SupplyChain Sentinel AI](https://supply-chain-sentinel-ai.vercel.app/)**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://supplychain-sentinel-ai.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://supply-chain-sentinel-ai.vercel.app/)
 
 </div>
 
