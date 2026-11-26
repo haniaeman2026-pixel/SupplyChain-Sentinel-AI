@@ -16,6 +16,14 @@
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Groq](https://img.shields.io/badge/Groq-111827?style=for-the-badge)
 
+<br/>
+
+### 🌐 Live Demo
+
+**[🚀 Visit SupplyChain Sentinel AI](https://supplychain-sentinel-ai.vercel.app/)**
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://supplychain-sentinel-ai.vercel.app/)
+
 </div>
 
 ---
